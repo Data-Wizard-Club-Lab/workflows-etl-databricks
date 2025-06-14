@@ -1,26 +1,24 @@
-# workflows-etl-databricks
-🚀 Descripción del Proyecto
-Este repositorio contiene un pipeline ETL completo y modular, desarrollado en Databricks usando PySpark, que procesa el dataset Top 100 SaaS Companies 2025.
+# 📊 Workflows ETL Databricks — SaaS 2025
 
-Se implementa la Medallion Architecture (Bronze ➜ Silver ➜ Gold) para garantizar:
+## 🚀 Descripción del Proyecto
 
-Datos trazables y auditables.
+Este repositorio contiene un pipeline **ETL completo y modular**, desarrollado en **Databricks** usando **PySpark**, para procesar el dataset **Top 100 SaaS Companies 2025**.
 
-Limpieza y transformación robusta.
+El flujo implementa la **Medallion Architecture (Bronze → Silver → Gold)** para garantizar:
+- ✔️ Datos trazables y auditables.
+- ✔️ Limpieza y transformación robusta.
+- ✔️ Agregaciones y métricas listas para análisis de negocio.
 
-Agregaciones y métricas listas para análisis de negocio.
+> **Compatible con Databricks Free Edition y Azure Databricks.**
 
-👉 Compatible con Databricks Free Edition y Azure Databricks.
+## 📂 Estructura del Data Lake
 
-📌 Arquitectura del Pipeline
-bash
-Copiar
-Editar
-📁 FileStore/saas/
- ├── bronze/          # Ingesta cruda + tracking de metadata
+\`\`\`plaintext
+FileStore/saas/
+ ├── bronze/               → Ingesta cruda + tracking de metadata
  ├── silver/
- │   ├── valid/       # Datos limpios y validados
- │   ├── invalid/     # Registros inválidos para auditoría
+ │   ├── valid/            → Datos limpios y validados
+ │   ├── invalid/          → Registros inválidos para auditoría
  ├── gold/
      ├── top20_by_valuation/
      ├── top20_by_arr/
@@ -28,110 +26,91 @@ Editar
      ├── summary_stats/
      ├── outliers/
      ├── high_g2_rating/
-Cada carpeta se guarda como archivos Delta o Parquet dentro de DBFS (FileStore), simulando un data lake tipo HDFS.
+\`\`\`
 
-⚙️ Componentes
-✅ 1️⃣ Bronze Layer — Ingesta cruda
+Cada carpeta se guarda como archivos **Delta o Parquet**, simulando un **Data Lake tipo HDFS**, optimizado para integrarse con herramientas de BI o pipelines externos.
 
-Carga el CSV original.
+## ⚙️ Componentes del Pipeline
 
-Agrega metadata: nombre de archivo + timestamp de ingesta.
+### ✅ 1️⃣ Bronze Layer — Ingesta Cruda
+- Carga el archivo CSV original.
+- Agrega metadata: nombre de archivo + timestamp de ingesta.
+- Guarda como archivos **Delta** en `/FileStore/saas/bronze/`.
 
-Guarda como archivos Delta en /FileStore/saas/bronze/.
+### ✅ 2️⃣ Silver Layer — Limpieza y Validación
+- Lee la capa Bronze.
+- Limpia formatos monetarios y escala valores (M, B, T).
+- Convierte tipos de datos y valida integridad (e.g. `ARR` no mayor que `Valuation`).
+- Separa registros **válidos** e **inválidos** para auditoría.
+- Guarda resultados en `/FileStore/saas/silver/valid/` y `/invalid/`.
 
-✅ 2️⃣ Silver Layer — Limpieza y Validación
+### ✅ 3️⃣ Gold Layer — Agregaciones Avanzadas
+- Lee la Silver Valid.
+- Calcula:
+  - Top 20 compañías por `Valuation` y `ARR`.
+  - Estadísticas por industria: conteo de empresas, promedio de `Valuation` y `ARR`, empleados totales.
+  - Estadísticas de dispersión: desviación estándar, mediana, percentiles.
+  - Identifica outliers (`Valuation` y `ARR` superiores al percentil 95).
+  - Segmento de empresas con `G2 Rating` alto.
+- Guarda cada vista en subcarpetas dentro de `/FileStore/saas/gold/`.
 
-Lee Bronze.
+## 🔄 Orquestación Recomendada
 
-Limpia formatos monetarios y escala valores (M, B, T).
+- **Notebooks sugeridos:**
+  - `01_bronze_ingestion`
+  - `02_silver_cleaning`
+  - `03_gold_aggregation`
 
-Convierte tipos de datos.
+- **Workflow en Databricks Jobs:**
+  1. **Task 1:** Bronze Ingestion  
+  2. **Task 2:** Silver Cleaning (depende de Task 1)  
+  3. **Task 3:** Gold Aggregation (depende de Task 2)
 
-Valida integridad: ARR no mayor que Valuation.
+- **Extra:** Agregar notificaciones de éxito/fallo por email o Slack.
+- **Recomendado:** Programar ejecución diaria o según necesidades del negocio.
 
-Separa registros válidos e inválidos.
+## ✅ Cómo Replicar este Proyecto
 
-Guarda en /FileStore/saas/silver/valid/ y /invalid/.
+### 1️⃣ Pre-requisitos
+- Crear cuenta en [Databricks Community Edition](https://community.cloud.databricks.com/) **(gratis)** o tener acceso a **Azure Databricks**.
+- Subir el archivo CSV `top_100_saas_companies_2025.csv` a `/FileStore/tables/`.
 
-✅ 3️⃣ Gold Layer — Agregaciones Avanzadas
+### 2️⃣ Importar Notebooks
+- Subir e importar los notebooks del repositorio.
+- Verificar y adaptar rutas: `bronze_path`, `silver_path`, `gold_path`.
 
-Lee Silver Valid.
+### 3️⃣ Crear Cluster
+- Recomendado: Databricks Runtime 11.x o superior.
+- Habilitar autoscaling para optimizar costos y rendimiento.
 
-Calcula:
+### 4️⃣ Ejecutar Paso a Paso
+- Ejecutar `01_bronze_ingestion`.
+- Ejecutar `02_silver_cleaning`.
+- Ejecutar `03_gold_aggregation`.
 
-Top 20 compañías por Valuation y ARR.
+### 5️⃣ Verificar Resultados
+- Navegar en Databricks FileStore: `dbutils.fs.ls("dbfs:/FileStore/saas/")`
+- Conectar notebooks, Power BI, Tableau o tu herramienta de BI favorita para usar las capas **Gold**.
 
-Estadísticas por industria: conteo, promedio, empleados totales.
+## 💡 Notas Adicionales
 
-Estadísticas de dispersión: stddev, mediana, percentiles.
+- **Formato de salida:** Bronze & Silver en Delta; Gold en Parquet.
+- **Escalabilidad:** Pipeline apto para clusters de producción en Azure Databricks.
+- **Integración:** Fácil de combinar con **Azure Data Factory**, **Synapse**, **Airflow**, u otros orquestadores.
+- **Límites Free Edition:** Máximo 15 GB; para cargas reales se recomienda un cluster escalable en Azure.
 
-Identifica outliers (Valuation y ARR superiores al P95).
+## 👨‍💻 Autor
 
-Filtra empresas con G2 Rating alto.
+**Daniel Santos Pareja**  
+🚀 Data Engineer | DataHackers & Data Wizard Club  
+📬 *Disponible para workshops, mentorías o consultoría personalizada.*
 
-Guarda cada vista en subcarpetas dentro de /FileStore/saas/gold/.
+## 📎 Archivos incluidos
 
-🔄 Orquestación Recomendada
-Crear 3 notebooks:
+- `01_bronze_ingestion.py`
+- `02_silver_cleaning.py`
+- `03_gold_aggregation.py`
+- `top_100_saas_companies_2025.csv`
 
-01_bronze_ingestion
 
-02_silver_cleaning
-
-03_gold_aggregation
-
-Crear un Workflow en Databricks Jobs:
-
-Task 1: Bronze ➜ Task 2: Silver ➜ Task 3: Gold.
-
-Opcional: añadir notificaciones de éxito/fallo por email o Slack.
-
-Programar ejecución periódica (ej. diaria).
-
-✅ Cómo Replicar
-1️⃣ Pre-requisitos
-
-Tener cuenta en Databricks Community Edition (gratis) o acceso a Azure Databricks.
-
-Subir el archivo CSV top_100_saas_companies_2025.csv a /FileStore/tables/.
-
-2️⃣ Importar Notebooks
-
-Importar los notebooks del repositorio.
-
-Revisar las rutas (bronze_path, silver_path, gold_path).
-
-3️⃣ Crear Cluster
-
-Runtime: Databricks Runtime 11.x o superior.
-
-Autoscaling habilitado si deseas optimizar recursos.
-
-4️⃣ Ejecutar Paso a Paso
-
-Ejecutar 01_bronze_ingestion.
-
-Luego 02_silver_cleaning.
-
-Finalmente 03_gold_aggregation.
-
-5️⃣ Consultar resultados
-
-Usar dbutils.fs.ls("dbfs:/FileStore/saas/") para explorar carpetas.
-
-Conectar notebooks o herramientas BI para consumir las capas Gold.
-
-💡 Notas
-Formato: El pipeline guarda en formato Delta (Bronze, Silver) y Parquet (Gold).
-
-Escalabilidad: Compatible con clústers de producción en Azure Databricks.
-
-Portabilidad: Puede integrarse con ADF, Synapse o Airflow.
-
-Costos: En Free Edition se limita a 15 GB; para grandes volúmenes usar cluster escalable en Azure.
-
-📣 Autor
-Daniel Santos Pareja
-🚀 Data Engineer | DataHackers & Data Wizard Club
-💬 Contáctame para workshops, consultoría o colaboraciones.
 
