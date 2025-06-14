@@ -13,21 +13,20 @@ El flujo implementa la **Medallion Architecture (Bronze → Silver → Gold)** p
 
 ## 📂 Estructura del Data Lake
 
-\`\`\`plaintext
+```plaintext
 FileStore/saas/
- ├── bronze/               → Ingesta cruda + tracking de metadata
- ├── silver/
- │   ├── valid/            → Datos limpios y validados
- │   ├── invalid/          → Registros inválidos para auditoría
- ├── gold/
-     ├── top20_by_valuation/
-     ├── top20_by_arr/
-     ├── by_industry/
-     ├── summary_stats/
-     ├── outliers/
-     ├── high_g2_rating/
-\`\`\`
-
+├── bronze/               → Ingesta cruda + tracking de metadata
+├── silver/
+│   ├── valid/            → Datos limpios y validados
+│   ├── invalid/          → Registros inválidos para auditoría
+├── gold/
+│   ├── top20_by_valuation/
+│   ├── top20_by_arr/
+│   ├── by_industry/
+│   ├── summary_stats/
+│   ├── outliers/
+│   ├── high_g2_rating/
+```
 Cada carpeta se guarda como archivos **Delta o Parquet**, simulando un **Data Lake tipo HDFS**, optimizado para integrarse con herramientas de BI o pipelines externos.
 
 ## ⚙️ Componentes del Pipeline
